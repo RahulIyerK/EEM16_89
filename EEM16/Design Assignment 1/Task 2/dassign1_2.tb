@@ -1,0 +1,54 @@
+//--------------------------------------------------------------------
+//		Timescale
+//		Means that if you do #1 in the initial block of your
+//		testbench, time is advanced by 1ns instead of 1ps
+//--------------------------------------------------------------------
+`timescale 1ns / 1ps
+
+//--------------------------------------------------------------------
+//		Design Assign #1, Problem #2 Testbench.
+//--------------------------------------------------------------------
+module dassign1_2_tb();
+//----------------------------------------------------------------
+//		Signal Declarations
+//----------------------------------------------------------------
+reg	a,b,c,d,e; // inputs
+integer i;
+wire	y,z; //outputs
+reg y1, z1;
+	
+//----------------------------------------------------------------
+//		Instantiate modules Module
+//----------------------------------------------------------------
+dassign1_2	dassign1_2_1(y,z,a,b,c,d,e);
+//----------------------------------------------------------------
+//		Test Stimulus
+//----------------------------------------------------------------
+initial begin
+   a=0;b=0;c=0;d=0;e=0;
+//
+// This is an example of cycling through all possible combinations
+//
+   for(i=5'b0;i<31;i=i+1) begin
+      #2
+      a=i[0];b=i[1];c=i[2];d=i[3];e=i[4];
+      #1
+     
+     y1 = (~b | c);
+     z1 = (~a) | (b & ~c) | (~b & c) | (d & ~e & c);
+     
+     if (y1 !== y)
+     begin
+       $monitor("y1 not equal to y");
+     end
+     
+     if (z1 !== z)
+     begin
+       $monitor("z1 not equal to z");
+     end
+     
+     
+
+   end
+end
+endmodule

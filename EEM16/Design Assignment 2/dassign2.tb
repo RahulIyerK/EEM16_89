@@ -1,0 +1,183 @@
+//		Timescale
+//--------------------------------------------------------------------
+`timescale 1ns / 1ps
+
+//--------------------------------------------------------------------
+//		Design Assignment Testbench.
+//--------------------------------------------------------------------
+/*
+ * Utility module to convert a decimal number to BCD 
+ *   No 10's complement is done here
+ */
+module int2bcd(int, bcd);
+  input [31:0] int;
+  output [15:0] bcd;
+
+reg [15:0] bcd;
+reg [3:0] tempDig1, tempDig2, tempDig3, tempDig4;
+
+always @(*) begin
+  tempDig1 = int % 10;
+  tempDig2 = ((int - tempDig1)/10) % 10;
+  tempDig3 = ((int - (10*tempDig2) - tempDig1)/100) % 10;
+  tempDig4 = ((int - (100*tempDig3) - (10*tempDig2) - tempDig1)/1000) % 10;
+//  $display("int:%d, bcd: %b_%b_%b_%b\n",
+//  		int,tempDig4, tempDig3, tempDig2, tempDig1);
+  bcd = {tempDig4, tempDig3, tempDig2, tempDig1};
+end
+endmodule
+
+/*
+ * Utility module to convert a BCD number to decimal
+ */
+module bcd2int(bcd, int);
+  input [15:0] bcd;
+  output [31:0] int;
+
+integer tempDig1, tempDig2, tempDig3, tempDig4;
+integer int;
+
+always @(*) begin
+  tempDig1 = bcd[3:0];
+  tempDig2 = bcd[7:4];
+  tempDig3 = bcd[11:8];
+  tempDig4 = bcd[15:12];
+  int = tempDig1 + tempDig2*10 + tempDig3*100 + tempDig4*1000;
+//  $display("bcd:%d_%d_%d_%d int:%d\n",
+//        tempDig4, tempDig3, tempDig2, tempDig1, int);
+end
+endmodule
+
+module dassign2_tb();
+//----------------------------------------------------------------
+//		Signal Declarations
+//----------------------------------------------------------------
+wire	[15:0]	dinA,dinB;
+reg           	sub;
+
+wire	[15:0]	dout;
+wire    	ovunflow;
+
+integer inpIntA, inpIntB, outTst;
+wire 	[31:0] outIntA,outIntB,outIntO,outInt;
+   	
+//----------------------------------------------------------------
+//		dassign2 Module
+//----------------------------------------------------------------
+dassign2	DUT(dinA, dinB, sub, dout, ovunflow);
+
+//----------------------------------------------------------------
+//		Test Stimulus
+//----------------------------------------------------------------
+/*
+ * specify the integer and input the integer and output the BCD as input the dassign.v
+ */
+int2bcd  bcdconvA(inpIntA, dinA);
+int2bcd  bcdconvB(inpIntB, dinB);
+/*
+ * convert the output to integer for checking purposes.
+ */
+bcd2int  intconv(dout,outIntO);
+
+initial begin
+  $monitor ("sub=%b inpA=%d inpB=%d outIntA=%d outIntB=%d dinA=%b dinB=%b dout=%b ovunflow=%b outInt=%d outTst=%d\n",
+  	   sub,inpIntA,inpIntB,outIntA,outIntB,dinA,dinB,dout,ovunflow,outIntO,outTst);
+  
+  #1 //flush
+    sub=1'b0;
+    inpIntA=0;
+    inpIntB=0;
+  #10  //+ve add +ve = +ve
+    sub=1'b0;
+    inpIntA=2999;
+    inpIntB=1999;
+    outTst= inpIntA + inpIntB;
+  #2
+    if ((outTst==outIntO) && (~ovunflow))
+      $display("correct");
+    else
+      begin
+      	$display("incorrect");
+      end
+//
+  #10  //+ve add -ve = +ve
+    sub=1'b0;
+    inpIntA=2999;
+    inpIntB=9001;
+    outTst= (inpIntA + inpIntB) - 10000;
+  #2
+    if ((outTst==outIntO) && (~ovunflow))
+      $display("correct");
+    else
+      $display("incorrect");
+//
+  #10  //+ve sub +ve = +ve
+    sub=1'b1;
+    inpIntA=4001;
+    inpIntB=3999;
+    outTst= inpIntA - inpIntB;
+  #2
+  if ((outTst==outIntO) && (~ovunflow))
+      $display("correct");
+    else
+      $display("incorrect");
+//
+  #10  //+ve sub +ve = -ve
+    sub=1'b1;
+    inpIntA=3999;
+    inpIntB=4001;
+    outTst= inpIntA - inpIntB + 10000;
+  #2
+    if ((outTst==outIntO) && (~ovunflow))
+      $display("correct");
+    else
+      $display("incorrect");
+#10 //+ve add +ve = -ve
+  sub=1'b0;
+  inpIntA=4000;
+  inpIntB=4000;
+  outTst = inpIntA + inpIntB;
+  
+  #2 
+  if ((outTst==outIntO) && (ovunflow))
+    $display("correct");
+  else
+    $display("incorrect");
+  
+#10 //-ve add -ve = +ve
+  sub=1'b0;
+  inpIntA=5000;
+  inpIntB=5000;
+  outTst = inpIntA + inpIntB - 10000;
+  #2
+  if ((outTst == outIntO) && (ovunflow))
+    $display("correct");
+  else
+    $display("incorrect");
+#10 //+ve sub -ve = -ve
+  sub=1'b1;
+  inpIntA = 4000;
+  inpIntB = 6000;
+  outTst = inpIntA - inpIntB + 10000;
+  #2
+  if ((outTst == outIntO) && (ovunflow))
+    $display("correct");
+  else
+    $display("incorrect");
+  
+  #10 //negative subtracting positive and result is positive
+  sub=1'b1;
+  inpIntA = 6000;
+  inpIntB = 4000;
+  outTst = inpIntA - inpIntB;
+  #2
+  if ((outTst == outIntO) && (ovunflow))
+    $display("correct");
+  else
+    $display("incorrect");
+  //
+// you should do more checks here for other numbers and over/underflow conditions
+//
+  
+end
+endmodule
