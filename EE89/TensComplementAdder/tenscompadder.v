@@ -27,9 +27,6 @@ module tenscomplementadder(
 reg [15:0] x;//input to seg7 to define segment pattern
 wire [15:0] led;
 
-reg[15:0] sum; //dinA + dinB
-reg[15:0] diff; //dinA - dinB
-
 reg[3:0] d1inA, d2inA, d3inA, d4inA;
 reg[3:0] d1inB, d2inB, d3inB, d4inB;
 
